@@ -48,16 +48,16 @@ bootmain(void)
 		goto bad;
 
 	// load each program segment (ignores ph flags)
-	ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
-	eph = ph + ELFHDR->e_phnum;
+	ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff); // 表头
+	eph = ph + ELFHDR->e_phnum; // 表尾
 	for (; ph < eph; ph++)
 		// p_pa is the load address of this segment (as well
 		// as the physical address)
-		readseg(ph->p_pa, ph->p_memsz, ph->p_offset);
+		readseg(ph->p_pa, ph->p_memsz, ph->p_offset); // 参数依次是：表头的physical address; 表头代表的segment的memory size; 表头相对于disk sector开头的offset
 
 	// call the entry point from the ELF header
 	// note: does not return!
-	((void (*)(void)) (ELFHDR->e_entry))();
+	((void (*)(void)) (ELFHDR->e_entry))();  // 转到ELF header储存的entry point，控制权交给kernel
 
 bad:
 	outw(0x8A00, 0x8A00);
@@ -120,6 +120,5 @@ readsect(void *dst, uint32_t offset)
 	waitdisk();
 
 	// read a sector
-	insl(0x1F0, dst, SECTSIZE/4);
+	insl(0x1F0, dst, SECTSIZE/4); // read form port 0x1F0
 }
-
