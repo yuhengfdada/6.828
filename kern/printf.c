@@ -5,7 +5,9 @@
 #include <inc/stdio.h>
 #include <inc/stdarg.h>
 
-
+/*
+	A helper for vprintfmt().
+*/
 static void
 putch(int ch, int *cnt)
 {
@@ -13,8 +15,11 @@ putch(int ch, int *cnt)
 	*cnt++;
 }
 
+/*
+	Use vprintfmt() as a subroutine. Return successful char counts.
+*/
 int
-vcprintf(const char *fmt, va_list ap)
+vcprintf(const char *fmt, va_list ap) // va_list = var_args_list
 {
 	int cnt = 0;
 

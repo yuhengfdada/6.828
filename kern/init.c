@@ -23,6 +23,17 @@ i386_init(void)
 	// Initialize the console.
 	// Can't call cprintf until after we do this!
 	cons_init();
+/*
+	// lab1 Exercise_8
+	cprintf("Lab1_Exercise_8:\n");
+    int x = 1, y = 3, z = 4;
+    // 
+    Lab1_exercise8_3:
+    cprintf("x %d, y %x, z %d\n", x, y, z);
+	unsigned int i = 0x00646c72;
+	cprintf("H%x Wo%s", 57616, &i);
+
+*/
 
 	cprintf("6828 decimal is %o octal!\n", 6828);
 
