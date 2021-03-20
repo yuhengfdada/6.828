@@ -436,33 +436,6 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	*pte = page2pa(pp) | perm | PTE_P;
 	pp->pp_ref += 1;
 	return 0;
-	
-/*
-    pte_t *pte = pgdir_walk(pgdir, va, 1);
-    
-    if (!pte) {
-
-        return -E_NO_MEM;
-    }
-    
-    if (*pte & PTE_P) {
-        if (PTE_ADDR(*pte) == page2pa(pp)) {
-
-            // 插入的是同一个页面，只需要修改权限等即可
-            pp->pp_ref--;
-        }
-        else {
-
-            page_remove(pgdir, va);
-        }
-        
-    }
-    
-    pp->pp_ref++;
-    *pte = page2pa(pp)| perm | PTE_P;
-    
-    return 0;
-*/
 }
 
 //
