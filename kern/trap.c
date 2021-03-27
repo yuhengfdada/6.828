@@ -1,6 +1,7 @@
 #include <inc/mmu.h>
 #include <inc/x86.h>
 #include <inc/assert.h>
+#include <inc/string.h>
 
 #include <kern/pmap.h>
 #include <kern/trap.h>
@@ -380,12 +381,51 @@ page_fault_handler(struct Trapframe *tf)
 	//   (the 'tf' variable points at 'curenv->env_tf').
 
 	// LAB 4: Your code here.
+	if (curenv->env_pgfault_upcall) {
+		struct UTrapframe *utf;
+		// if recursive...
+		if (UXSTACKTOP - PGSIZE <= tf->tf_esp < UXSTACKTOP) {
+			// push an empty word
+			tf->tf_esp -= 4;
+			// memset((void *)tf->tf_esp,0,4);
+			// push utf
+			utf = tf->tf_esp - sizeof(struct UTrapframe);
+			if ((int)utf < UXSTACKTOP-PGSIZE) {
+				// overflowed.
+				cprintf("[%08x] user fault va %08x ip %08x\n",
+				curenv->env_id, fault_va, tf->tf_eip);
+				print_trapframe(tf);
+				env_destroy(curenv);
+			}
+		}
+		// normal case
+		else {
+			// allocate exception stack first
+			struct PageInfo *pp = page_alloc(curenv->env_pgdir, ALLOC_ZERO);
+			page_insert(curenv->env_pgdir,pp,UXSTACKTOP-PGSIZE,PTE_W);
+			// push utf
+			utf = UXSTACKTOP - sizeof(struct UTrapframe);
+		}
+		user_mem_assert(curenv, (void *)utf, sizeof(struct UTrapframe), PTE_U | PTE_W);
+		utf->utf_fault_va = fault_va;
+		utf->utf_err = tf->tf_err;
+		utf->utf_regs = tf->tf_regs;
+		utf->utf_eip = tf->tf_eip;
+		utf->utf_eflags = tf->tf_eflags;
+		utf->utf_esp = tf->tf_esp;
 
-
+		tf->tf_esp = (uint32_t)utf;
+		tf->tf_eip = (uint32_t)curenv->env_pgfault_upcall;
+		env_run(curenv); // Back to user space. Does it return?
+		// The answer: env_run does NOT return. It calls pop_tf(), which uses the iret instruction to return from interrupt.
+		// BUT.. how does it guarantee that program will resume at "fault_va"?
+	}
+	else {
 	// Destroy the environment that caused the fault.
-	cprintf("[%08x] user fault va %08x ip %08x\n",
-		curenv->env_id, fault_va, tf->tf_eip);
-	print_trapframe(tf);
-	env_destroy(curenv);
+		cprintf("[%08x] user fault va %08x ip %08x\n",
+			curenv->env_id, fault_va, tf->tf_eip);
+		print_trapframe(tf);
+		env_destroy(curenv);
+	}
 }
 
