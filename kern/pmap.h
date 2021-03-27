@@ -66,6 +66,9 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
 
 void	tlb_invalidate(pde_t *pgdir, void *va);
 
+
+void *	mmio_map_region(physaddr_t pa, size_t size);
+
 int	user_mem_check(struct Env *env, const void *va, size_t len, int perm);
 void	user_mem_assert(struct Env *env, const void *va, size_t len, int perm);
 

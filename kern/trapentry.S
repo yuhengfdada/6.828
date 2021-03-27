@@ -3,6 +3,7 @@
 #include <inc/mmu.h>
 #include <inc/memlayout.h>
 #include <inc/trap.h>
+#include <kern/picirq.h>
 
 
 
@@ -46,6 +47,7 @@
 /*
  * Lab 3: Your code here for generating entry points for the different traps.
  */
+
 TRAPHANDLER_NOEC(divide_entry, T_DIVIDE);
 TRAPHANDLER_NOEC(debug_entry, T_DEBUG);
 TRAPHANDLER_NOEC(nmi_entry, T_NMI);
@@ -67,9 +69,11 @@ TRAPHANDLER_NOEC(simderr_entry, T_SIMDERR);
 TRAPHANDLER_NOEC(syscall_entry, T_SYSCALL);
 
 
+
 /*
  * Lab 3: Your code here for _alltraps
  */
+
 _alltraps:
 	push %ds
 	push %es
@@ -81,3 +85,4 @@ _alltraps:
 
 	pushl %esp
 	call trap
+
