@@ -51,6 +51,7 @@ struct Env {
 	enum EnvType env_type;		// Indicates special system environments
 	unsigned env_status;		// Status of the environment
 	uint32_t env_runs;		// Number of times environment has run
+
 	int env_cpunum;			// The CPU that the env is running on
 
 	// Address space
