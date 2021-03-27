@@ -270,7 +270,10 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
-
+	for (int i = 0; i < NCPU; i++) {
+		int kstacktop_i = KSTACKTOP - i * (KSTKSIZE + KSTKGAP);
+		boot_map_region(kern_pgdir, kstacktop_i - KSTKSIZE, KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W);
+	}
 }
 
 // --------------------------------------------------------------
@@ -311,6 +314,8 @@ page_init(void)
 	// free pages!
 	size_t i;
 	for (i = 1; i < npages_basemem; i++) {
+		// if (page2pa(&pages[i]) == MPENTRY_PADDR)	continue;
+		if (i == 7) continue;	// MPENTRY_PADDR = 0x7000 (at low memory), the 7th page
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
@@ -597,7 +602,7 @@ mmio_map_region(physaddr_t pa, size_t size)
 	uintptr_t ret = base;
 	boot_map_region(kern_pgdir, base, pgsize, pa, PTE_PCD | PTE_PWT | PTE_W);
 	base += pgsize;
-	return (void *) base;
+	return (void *) ret;
 }
 
 static uintptr_t user_mem_check_addr;
