@@ -11,6 +11,7 @@
 #include <kern/env.h>
 #include <kern/cpu.h>
 
+
 // These variables are set by i386_detect_memory()
 size_t npages;			// Amount of physical memory (in pages)
 static size_t npages_basemem;	// Amount of base memory (in pages)
@@ -63,8 +64,10 @@ i386_detect_memory(void)
 // Set up memory mappings above UTOP.
 // --------------------------------------------------------------
 
+
 static void mem_init_mp(void);
 static void boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm);
+
 static void check_page_free_list(bool only_low_memory);
 static void check_page_alloc(void);
 static void check_kern_pgdir(void);
@@ -133,6 +136,7 @@ mem_init(void)
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
+	// caution: kern_pgdir is a virtual memory address!
 	kern_pgdir = (pde_t *) boot_alloc(PGSIZE); // page directory only needs 4KB memory since it only holds 1024 PTEs.
 	memset(kern_pgdir, 0, PGSIZE);
 
@@ -157,6 +161,9 @@ mem_init(void)
 	//////////////////////////////////////////////////////////////////////
 	// Make 'envs' point to an array of size 'NENV' of 'struct Env'.
 	// LAB 3: Your code here.
+
+	envs = (struct Env *)boot_alloc(NENV * sizeof(struct Env));
+
 
 	//////////////////////////////////////////////////////////////////////
 	// Now that we've allocated the initial kernel data structures, we set
@@ -188,6 +195,8 @@ mem_init(void)
 	//    - the new image at UENVS  -- kernel R, user R
 	//    - envs itself -- kernel RW, user NONE
 	// LAB 3: Your code here.
+
+	boot_map_region(kern_pgdir, UENVS, PTSIZE, PADDR(envs), PTE_U | PTE_P);
 
 	//////////////////////////////////////////////////////////////////////
 	// Use the physical memory that 'bootstack' refers to as the kernel
@@ -428,7 +437,7 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
 // mapped pages.
 //
 // Hint: the TA solution uses pgdir_walk
-static void
+void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
@@ -611,6 +620,67 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
 
+	return 0;
+}
+
+//
+// Checks that environment 'env' is allowed to access the range
+// of memory [va, va+len) with permissions 'perm | PTE_U | PTE_P'.
+// If it can, then the function simply returns.
+// If it cannot, 'env' is destroyed and, if env is the current
+// environment, this function will not return.
+//
+void
+user_mem_assert(struct Env *env, const void *va, size_t len, int perm)
+{
+	if (user_mem_check(env, va, len, perm | PTE_U) < 0) {
+		cprintf("[%08x] user_mem_check assertion failure for "
+			"va %08x\n", env->env_id, user_mem_check_addr);
+		env_destroy(env);	// may not return
+	}
+}
+
+static uintptr_t user_mem_check_addr;
+
+//
+// Check that an environment is allowed to access the range of memory
+// [va, va+len) with permissions 'perm | PTE_P'.
+// Normally 'perm' will contain PTE_U at least, but this is not required.
+// 'va' and 'len' need not be page-aligned; you must test every page that
+// contains any of that range.  You will test either 'len/PGSIZE',
+// 'len/PGSIZE + 1', or 'len/PGSIZE + 2' pages.
+//
+// A user program can access a virtual address if (1) the address is below
+// ULIM, and (2) the page table gives it permission.  These are exactly
+// the tests you should implement here.
+//
+// If there is an error, set the 'user_mem_check_addr' variable to the first
+// erroneous virtual address.
+//
+// Returns 0 if the user program can access this range of addresses,
+// and -E_FAULT otherwise.
+//
+int
+user_mem_check(struct Env *env, const void *va, size_t len, int perm)
+{
+	// LAB 3: Your code here.
+	pte_t *entry;
+	user_mem_check_addr = (uintptr_t) va;
+	if((int) va + len >= ULIM)	return -E_FAULT;
+	int start = ROUNDDOWN((int)va,PGSIZE);
+	int numpages = ((int)va-start+len)/PGSIZE + !!((int)va-start+len)%PGSIZE;
+	for (int i = 0; i < numpages; i++) {
+		if(!(entry = pgdir_walk(env->env_pgdir, (void *)(start + i*PGSIZE), 0)))	{
+			if (i == 0)	user_mem_check_addr = (int) va;	// as precise as possible
+			else user_mem_check_addr = start + i*PGSIZE;
+			return -E_FAULT;
+		}
+		if (((*entry) | (perm|PTE_P)) != (*entry))	{
+			if (i == 0)	user_mem_check_addr = (int) va;
+			else user_mem_check_addr = start + i*PGSIZE;
+			return -E_FAULT;
+		}
+	}
 	return 0;
 }
 
@@ -826,6 +896,7 @@ check_kern_pgdir(void)
 		case PDX(UPAGES):
 		case PDX(UENVS):
 		case PDX(MMIOBASE):
+
 			assert(pgdir[i] & PTE_P);
 			break;
 		default:

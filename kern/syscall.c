@@ -12,6 +12,7 @@
 #include <kern/console.h>
 #include <kern/sched.h>
 
+
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
 // Destroys the environment on memory errors.
@@ -22,7 +23,7 @@ sys_cputs(const char *s, size_t len)
 	// Destroy the environment if not.
 
 	// LAB 3: Your code here.
-
+	user_mem_assert(curenv,(void *)s,len,0);
 	// Print the string supplied by the user.
 	cprintf("%.*s", len, s);
 }
@@ -62,6 +63,7 @@ sys_env_destroy(envid_t envid)
 	env_destroy(e);
 	return 0;
 }
+
 
 // Deschedule current environment and pick a different one to run.
 static void
@@ -263,6 +265,7 @@ sys_ipc_recv(void *dstva)
 	return 0;
 }
 
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -271,9 +274,20 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// Return any appropriate return value.
 	// LAB 3: Your code here.
 
+
 	panic("syscall not implemented");
 
+
+
 	switch (syscallno) {
+	case SYS_cgetc:
+		return sys_cgetc();
+	case SYS_cputs:
+		sys_cputs((char *)a1, a2);
+	case SYS_getenvid:
+		return sys_getenvid();
+	case SYS_env_destroy:
+		sys_env_destroy(a1);
 	default:
 		return -E_INVAL;
 	}
