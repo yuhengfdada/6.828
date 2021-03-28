@@ -384,12 +384,12 @@ page_fault_handler(struct Trapframe *tf)
 	if (curenv->env_pgfault_upcall) {
 		struct UTrapframe *utf;
 		// if recursive...
-		if (UXSTACKTOP - PGSIZE <= tf->tf_esp < UXSTACKTOP) {
+		if (UXSTACKTOP - PGSIZE <= tf->tf_esp && tf->tf_esp < UXSTACKTOP) {
 			// push an empty word
-			tf->tf_esp -= 4;
+			// tf->tf_esp -= 4;
 			// memset((void *)tf->tf_esp,0,4);
 			// push utf
-			utf = tf->tf_esp - sizeof(struct UTrapframe);
+			utf = (struct UTrapframe *) (tf->tf_esp - sizeof(struct UTrapframe) - 4);
 			if ((int)utf < UXSTACKTOP-PGSIZE) {
 				// overflowed.
 				cprintf("[%08x] user fault va %08x ip %08x\n",
@@ -400,11 +400,11 @@ page_fault_handler(struct Trapframe *tf)
 		}
 		// normal case
 		else {
-			// allocate exception stack first
-			struct PageInfo *pp = page_alloc(curenv->env_pgdir, ALLOC_ZERO);
-			page_insert(curenv->env_pgdir,pp,UXSTACKTOP-PGSIZE,PTE_W);
+			// allocate exception stack first (should be done in pgfault.c)
+			// struct PageInfo *pp = page_alloc(curenv->env_pgdir, ALLOC_ZERO);
+			// page_insert(curenv->env_pgdir,pp,UXSTACKTOP-PGSIZE,PTE_W);
 			// push utf
-			utf = UXSTACKTOP - sizeof(struct UTrapframe);
+			utf = (struct UTrapframe *)(UXSTACKTOP - sizeof(struct UTrapframe));
 		}
 		user_mem_assert(curenv, (void *)utf, sizeof(struct UTrapframe), PTE_U | PTE_W);
 		utf->utf_fault_va = fault_va;
@@ -419,6 +419,7 @@ page_fault_handler(struct Trapframe *tf)
 		env_run(curenv); // Back to user space. Does it return?
 		// The answer: env_run does NOT return. It calls pop_tf(), which uses the iret instruction to return from interrupt.
 		// BUT.. how does it guarantee that program will resume at "fault_va"?
+		// Ans: see pfentry.S!
 	}
 	else {
 	// Destroy the environment that caused the fault.
