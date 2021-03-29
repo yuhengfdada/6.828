@@ -87,7 +87,22 @@ void align_entry();
 void mchk_entry();
 void simderr_entry();
 void syscall_entry();
-
+void irq0_entry();
+void irq1_entry();
+void irq2_entry();
+void irq3_entry();
+void irq4_entry();
+void irq5_entry();
+void irq6_entry();
+void irq7_entry();
+void irq8_entry();
+void irq9_entry();
+void irq10_entry();
+void irq11_entry();
+void irq12_entry();
+void irq13_entry();
+void irq14_entry();
+void irq15_entry();
 
 void
 trap_init(void)
@@ -114,8 +129,23 @@ trap_init(void)
 	SETGATE(idt[T_ALIGN], 0, GD_KT, align_entry, 0);
 	SETGATE(idt[T_MCHK], 0, GD_KT, mchk_entry, 0);
 	SETGATE(idt[T_SIMDERR], 0, GD_KT, simderr_entry, 0);
-	SETGATE(idt[T_SYSCALL], 1, GD_KT, syscall_entry, 3);
-
+	SETGATE(idt[T_SYSCALL], 0, GD_KT, syscall_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+0], 0, GD_KT, irq0_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+1], 0, GD_KT, irq1_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+2], 0, GD_KT, irq2_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+3], 0, GD_KT, irq3_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+4], 0, GD_KT, irq4_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+5], 0, GD_KT, irq5_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+6], 0, GD_KT, irq6_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+7], 0, GD_KT, irq7_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+8], 0, GD_KT, irq8_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+9], 0, GD_KT, irq9_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+10], 0, GD_KT, irq10_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+11], 0, GD_KT, irq11_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+12], 0, GD_KT, irq12_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+13], 0, GD_KT, irq13_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+14], 0, GD_KT, irq14_entry, 3);
+	SETGATE(idt[IRQ_OFFSET+15], 0, GD_KT, irq15_entry, 3);
 	// Per-CPU setup 
 	trap_init_percpu();
 }
@@ -237,8 +267,12 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle clock interrupts. Don't forget to acknowledge the
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
-
-
+	
+	if (tf->tf_trapno == IRQ_OFFSET) {
+		lapic_eoi();
+		sched_yield();
+	}
+	
 	/*
 	if (tf->tf_trapno == T_DIVIDE) {
 		cprintf("yeah!\n");
@@ -259,14 +293,15 @@ trap_dispatch(struct Trapframe *tf)
 		regs->reg_eax = (unsigned)ret;
 		return;
 	}
-
-	// Unexpected trap: The user process or the kernel has a bug.
-	print_trapframe(tf);
-	if (tf->tf_cs == GD_KT)
-		panic("unhandled trap in kernel");
 	else {
-		env_destroy(curenv);
-		return;
+	// Unexpected trap: The user process or the kernel has a bug.
+		print_trapframe(tf);
+		if (tf->tf_cs == GD_KT)
+			panic("unhandled trap in kernel");
+		else {
+			env_destroy(curenv);
+			return;
+		}
 	}
 }
 
@@ -291,6 +326,8 @@ trap(struct Trapframe *tf)
 	// Check that interrupts are disabled.  If this assertion
 	// fails, DO NOT be tempted to fix it by inserting a "cli" in
 	// the interrupt path.
+	//if (read_eflags() & FL_IF)
+		//print_trapframe(tf);
 	assert(!(read_eflags() & FL_IF));
 
 

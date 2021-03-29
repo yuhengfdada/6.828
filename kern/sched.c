@@ -29,6 +29,28 @@ sched_yield(void)
 	// below to halt the cpu.
 
 	// LAB 4: Your code here.
+	// PREFER SIMPLER CODE OVER COMPLEX CODE
+    int32_t startid = (curenv) ? ENVX(curenv->env_id): 0;
+    int32_t nextid;
+    size_t i;
+    // current env is FREE or RUNNING. So safe to start from i=0.
+    for(i = 1; i < NENV+1; i++) {
+        nextid = (startid+i)%NENV;
+        if(envs[nextid].env_status == ENV_RUNNABLE) {
+                env_run(&envs[nextid]);
+                return;
+            }
+    }
+    // Not found. Try with the current env.
+    if(envs[startid].env_status == ENV_RUNNING && envs[startid].env_cpunum == cpunum()) {
+        env_run(&envs[startid]);
+    }
+    
+    // Still not found. Halt the CPU.
+	// sched_halt never returns
+    sched_halt();
+
+	/*
 	int i;
 	int flag = 0;
 	if (!curenv) {
@@ -53,6 +75,7 @@ sched_yield(void)
 	}
 	// sched_halt never returns
 	sched_halt();
+	*/
 }
 
 // Halt this CPU when there is nothing to do. Wait until the
@@ -96,7 +119,7 @@ sched_halt(void)
 		"pushl $0\n"
 		"pushl $0\n"
 		// Uncomment the following line after completing exercise 13
-		//"sti\n"
+		"sti\n"
 		"1:\n"
 		"hlt\n"
 		"jmp 1b\n"
