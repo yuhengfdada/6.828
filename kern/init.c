@@ -18,12 +18,24 @@
 static void boot_aps(void);
 
 
+
 void
 i386_init(void)
 {
 	// Initialize the console.
 	// Can't call cprintf until after we do this!
 	cons_init();
+/*
+	// lab1 Exercise_8
+	cprintf("Lab1_Exercise_8:\n");
+    int x = 1, y = 3, z = 4;
+    // 
+    Lab1_exercise8_3:
+    cprintf("x %d, y %x, z %d\n", x, y, z);
+	unsigned int i = 0x00646c72;
+	cprintf("H%x Wo%s", 57616, &i);
+
+*/
 
 	cprintf("6828 decimal is %o octal!\n", 6828);
 
@@ -34,6 +46,7 @@ i386_init(void)
 	env_init();
 	trap_init();
 
+
 	// Lab 4 multiprocessor initialization functions
 	mp_init();
 	lapic_init();
@@ -43,7 +56,7 @@ i386_init(void)
 
 	// Acquire the big kernel lock before waking up APs
 	// Your code here:
-
+	lock_kernel();
 	// Starting non-boot CPUs
 	boot_aps();
 
@@ -63,6 +76,7 @@ i386_init(void)
 
 	// Schedule and run the first user environment!
 	sched_yield();
+
 }
 
 // While boot_aps is booting a given CPU, it communicates the per-core
@@ -115,7 +129,8 @@ mp_main(void)
 	// only one CPU can enter the scheduler at a time!
 	//
 	// Your code here:
-
+	lock_kernel();
+	sched_yield();
 	// Remove this after you finish Exercise 6
 	for (;;);
 }

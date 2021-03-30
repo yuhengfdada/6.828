@@ -57,6 +57,7 @@ KERN_BINFILES :=	user/hello \
 			user/faultwrite \
 			user/faultwritekernel
 
+
 # Binary files for LAB4
 KERN_BINFILES +=	user/idle \
 			user/yield \

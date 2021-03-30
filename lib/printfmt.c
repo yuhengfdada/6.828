@@ -91,14 +91,15 @@ void printfmt(void (*putch)(int, void*), void *putdat, const char *fmt, ...);
 void
 vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 {
-	register const char *p;
+	register const char *p;		// register keyword: store the variable in a register if possible.
 	register int ch, err;
 	unsigned long long num;
 	int base, lflag, width, precision, altflag;
 	char padc;
 
 	while (1) {
-		while ((ch = *(unsigned char *) fmt++) != '%') {
+		/* The loop prints everything before the first '%' character. */
+		while ((ch = *(unsigned char *) fmt++) != '%') {  // cast to unsigned char in order to do self-incrementation.
 			if (ch == '\0')
 				return;
 			putch(ch, putdat);
@@ -215,10 +216,9 @@ vprintfmt(void (*putch)(int, void*), void *putdat, const char *fmt, va_list ap)
 		// (unsigned) octal
 		case 'o':
 			// Replace this with your code.
-			putch('X', putdat);
-			putch('X', putdat);
-			putch('X', putdat);
-			break;
+			num = getuint(&ap, lflag);
+			base = 8;
+			goto number;
 
 		// pointer
 		case 'p':
