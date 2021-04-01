@@ -49,7 +49,7 @@ umain(int argc, char **argv)
 	if ((r = devfile.dev_read(FVA, buf, sizeof buf)) < 0)
 		panic("file_read: %e", r);
 	if (strcmp(buf, msg) != 0)
-		panic("file_read returned wrong data");
+		panic("file_read returned wrong data! Wanted: %s, returned: %s", msg, buf);
 	cprintf("file_read is good\n");
 
 	if ((r = devfile.dev_close(FVA)) < 0)
@@ -79,8 +79,8 @@ umain(int argc, char **argv)
 	memset(buf, 0, sizeof buf);
 	if ((r = devfile.dev_read(FVA, buf, sizeof buf)) < 0)
 		panic("file_read after file_write: %e", r);
-	if (r != strlen(msg))
-		panic("file_read after file_write returned wrong length: %d", r);
+	if (r != (strlen(msg)+1))
+		panic("file_read after file_write returned wrong length: %d, should be: %d", r, strlen(msg));
 	if (strcmp(buf, msg) != 0)
 		panic("file_read after file_write returned wrong data");
 	cprintf("file_read after file_write is good\n");

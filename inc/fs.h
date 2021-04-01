@@ -34,7 +34,7 @@ struct File {
 	// Block pointers.
 	// A block is allocated iff its value is != 0.
 	uint32_t f_direct[NDIRECT];	// direct blocks
-	uint32_t f_indirect;		// indirect block
+	uint32_t f_indirect;		// indirect block NUMBER
 
 	// Pad out to 256 bytes; must do arithmetic in case we're compiling
 	// fsformat on a 64-bit machine.
